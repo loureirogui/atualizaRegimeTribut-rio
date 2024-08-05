@@ -16,7 +16,6 @@ emailLogin = 'guilherme.loureiro@setuptecnologia.com.br'
 senhaLogin = 'Racewin@1406'
 print("Acessando Acessorias Agora")
 
-
 # Caminho para o driver do Edge
 driver_path = 'msedgedriver.exe'
 
@@ -31,7 +30,6 @@ edge_driver = webdriver.Edge(service=service, options=edge_options)
 # Abre o link desejado
 url = f"https://app.acessorias.com/sysmain.php?m=22"
 edge_driver.get(url)
-
 
 # Lógica de login
 try:
@@ -70,7 +68,6 @@ except:
 time.sleep(3)
 
 url = 'https://app.acessorias.com/sysmain.php?m=22'
-
 edge_driver.get(url)
 
 # Carrega o arquivo .xlsx
@@ -79,9 +76,7 @@ workbook = openpyxl.load_workbook('empresas.xlsx')
 # Seleciona a planilha
 sheet = workbook['Regime tributário']
 
-
-
-#INATIVADOR DE REGIMES PRÉ-DEFINIDOS
+# INATIVADOR DE REGIMES PRÉ-DEFINIDOS
 try:
     # Espera que os regimes tributários estejam visíveis
     regimesPadrao = WebDriverWait(edge_driver, 10).until(
@@ -109,41 +104,38 @@ try:
                     print("Erro ao selecionar o não")
                     traceback.print_exc()
                 
-                #Clica no botão de salvar
+                # Clica no botão de salvar
                 try:
                     # Espera o campo de inativação aparecer
                     saveButton = WebDriverWait(edge_driver, 10).until(
                         EC.visibility_of_element_located((By.XPATH, '//*[@id="main-container"]/div[2]/div[2]/div/div/form/div[1]/div[3]/button[1]'))
                     )
-                    #Clica no botão de salvar
-                    # saveButton.click()
+                    # saveButton.click()  # Descomentar para salvar de fato
                     time.sleep(2)
                     print("Regime tributário inativado com sucesso.")
                 except Exception as e:
                     print("Erro ao clicar no inativador:")
                     traceback.print_exc()
         except Exception as e:
-                    print("Erro ao clicar nos regimes tributários:")
-                    traceback.print_exc()
-                    
+            print("Erro ao clicar nos regimes tributários:")
+            traceback.print_exc()
 except Exception as e:
     print("Erro ao encontrar os regimes tributários:")
     traceback.print_exc()
-    
+
 edge_driver.get(url)
 
-#Criar novos regimes tributários...  
-#após localizar os regimes na planilha,                      
+# Criar novos regimes tributários...  
+# após localizar os regimes na planilha,                      
 # Itera sobre as colunas da primeira linha até encontrar uma célula vazia
+
 col = 1
 while True:
     titleRegime = sheet.cell(row=2, column=col).value
     if titleRegime is None:  # Para quando encontrar uma célula vazia
         break
     
-    col += 1
     for regimes in titleRegime:
-        
         edge_driver.get(url)
         try:
             # Encontra e clica no botão de criar novo regime tributário
@@ -167,21 +159,64 @@ while True:
             print("Erro ao colocar o nome do regime no campo input")
             traceback.print_exc()
             
-        #Clica no botão de salvar
+        # Clica no botão de salvar
         try:
             # Espera o campo de inativação aparecer
             saveButton = WebDriverWait(edge_driver, 10).until(
                 EC.visibility_of_element_located((By.XPATH, '//*[@id="main-container"]/div[2]/div[2]/div/div/form/div/div[3]/button[1]'))
             )
-            #Clica no botão de salvar
-            # saveButton.click()
+            # saveButton.click()  # Descomentar para salvar de fato
             time.sleep(2)
             print("Regime tributário supostamente salvo com sucesso se eu quisesse salvar agora.")
         except Exception as e:
             print("Erro ao clicar no botão de salvar:")
             traceback.print_exc()
-        col += 1
-        titleRegime = sheet.cell(row=2, column=col).value
-        if titleRegime is None:  # Para quando encontrar uma célula vazia
-            break
-        teste=input('breakpoint')
+
+        # Remover enquanto estiver em produção
+        url = 'https://app.acessorias.com/sysmain.php?m=23&act=e&tr=R&i=42&p=0&o=RegNome&rpp=14'
+        edge_driver.get(url)
+
+        row = 3  # Iniciando na linha 3
+        empty_cell_count = 0  # Contador de células vazias consecutivas
+
+        while True:
+            obrigacaoName = sheet.cell(row=row, column=col).value
+
+            if obrigacaoName is None:
+                empty_cell_count += 1
+                if empty_cell_count >= 5:
+                    break
+            else:
+                empty_cell_count = 0  # Reseta o contador se encontrar uma célula não vazia
+
+                try:
+                    # Espera o campo de inativação aparecer
+                    seletorObr = WebDriverWait(edge_driver, 10).until(
+                        EC.visibility_of_element_located((By.XPATH, '//*[@id="newObr"]'))
+                    )
+                    # Seleciona a opção com nome da obrigação no campo de inativação
+                    select = Select(seletorObr)
+                    options = select.options
+                    for option in options:
+                        if obrigacaoName in option.text:
+                            select.select_by_visible_text(option.text)
+                            break
+
+                    # Clica no botão de adicionar
+                    addButton = WebDriverWait(edge_driver, 10).until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="divSelectObr"]/button'))
+                    )
+                    addButton.click()
+                    print(f"Obrigação {obrigacaoName} adicionada com sucesso.")
+                except Exception as e:
+                    print(f"Erro ao selecionar a obrigação {obrigacaoName}")
+                    traceback.print_exc()
+
+            row += 1  # Vai para a próxima linha
+
+        col += 1  # Vai para a próxima coluna
+    
+    if titleRegime is None:  # Para quando encontrar uma célula vazia
+        break
+    
+    teste = input('breakpoint')
